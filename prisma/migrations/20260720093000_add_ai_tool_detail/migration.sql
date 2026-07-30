@@ -1,0 +1,1 @@
+ALTER TABLE `ai_tools` ADD COLUMN `detail` LONGTEXT NULL;

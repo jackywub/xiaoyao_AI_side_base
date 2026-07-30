@@ -1,0 +1,1048 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum UserRole {
+  ADMIN
+  EDITOR
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ProjectType {
+  CONTENT
+  SERVICE
+  TOOL
+  CONSULTING
+}
+
+enum ServiceStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum MessageStatus {
+  UNREAD
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+enum SettingType {
+  STRING
+  TEXT
+  JSON
+  BOOLEAN
+  NUMBER
+  IMAGE
+}
+
+enum PageSectionType {
+  HERO
+  TEXT
+  FEATURE_GRID
+  LIST
+  FAQ
+  CTA
+  CUSTOM
+}
+
+enum MediaKind {
+  IMAGE
+  DOCUMENT
+  VIDEO
+  OTHER
+}
+
+enum WorkspaceTaskType {
+  DAILY
+  PHASED
+  LONG_TERM
+}
+
+enum WorkspaceTaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum WorkspaceTaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  ARCHIVED
+}
+
+enum WorkspaceTaskQuadrant {
+  IMPORTANT_URGENT
+  IMPORTANT_NOT_URGENT
+  URGENT_NOT_IMPORTANT
+  LOW
+}
+
+enum WorkspaceHabitType {
+  READING
+  REVIEW
+  EXERCISE
+  LEARNING
+  CUSTOM
+}
+
+enum HabitFrequency {
+  DAILY
+  WEEKLY
+}
+
+enum WorkspaceProjectStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum WorkspaceRiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum WorkspaceTransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum ReadingSource {
+  MANUAL
+  WEREAD
+}
+
+enum WorkspaceExerciseType {
+  WALKING
+  RUNNING
+  CYCLING
+  SWIMMING
+  STRENGTH
+  BODYWEIGHT
+  YOGA
+  OTHER
+}
+
+enum WorkspaceGoalPhaseType {
+  LEARNING
+  PRACTICE
+  COMPLETION
+}
+
+enum ExternalProvider {
+  WEREAD
+  OBSIDIAN
+  IMA
+}
+
+enum ExternalConnectionStatus {
+  DISCONNECTED
+  CONNECTED
+  ERROR
+}
+
+enum ExternalSyncStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum AiMessageRole {
+  SYSTEM
+  USER
+  ASSISTANT
+}
+
+model User {
+  id           String        @id @default(cuid()) @db.VarChar(30)
+  username     String        @unique @db.VarChar(191)
+  passwordHash String        @db.VarChar(255)
+  displayName  String        @db.VarChar(100)
+  email        String?       @unique @db.VarChar(191)
+  avatarUrl    String?       @db.VarChar(500)
+  bio          String?       @db.Text
+  role         UserRole      @default(ADMIN)
+  isActive     Boolean       @default(true)
+  articles     Article[]
+  cases        Case[]
+  pages        Page[]
+  mediaAssets  MediaAsset[]
+  sessions     UserSession[]
+  workspace    Workspace?
+  createdAt    DateTime      @default(now()) @db.DateTime(3)
+  updatedAt    DateTime      @updatedAt @db.DateTime(3)
+
+  @@map("users")
+}
+
+model Article {
+  id          String        @id @default(cuid()) @db.VarChar(30)
+  title       String        @db.VarChar(200)
+  slug        String        @unique @db.VarChar(191)
+  excerpt     String?       @db.VarChar(500)
+  content     String        @db.LongText
+  coverImage  String?       @db.VarChar(500)
+  status      ContentStatus @default(DRAFT)
+  isFeatured  Boolean       @default(false)
+  viewCount   Int           @default(0)
+  publishedAt DateTime?     @db.DateTime(3)
+  authorId    String        @db.VarChar(30)
+  categoryId  String?       @db.VarChar(30)
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  category    Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags        ArticleTag[]
+  createdAt   DateTime      @default(now()) @db.DateTime(3)
+  updatedAt   DateTime      @updatedAt @db.DateTime(3)
+
+  @@index([authorId])
+  @@index([categoryId])
+  @@index([status, publishedAt])
+  @@map("articles")
+}
+
+model Category {
+  id          String    @id @default(cuid()) @db.VarChar(30)
+  name        String    @db.VarChar(100)
+  slug        String    @unique @db.VarChar(191)
+  description String?   @db.VarChar(500)
+  sortOrder   Int       @default(0)
+  isVisible   Boolean   @default(true)
+  articles    Article[]
+  createdAt   DateTime  @default(now()) @db.DateTime(3)
+  updatedAt   DateTime  @updatedAt @db.DateTime(3)
+
+  @@map("categories")
+}
+
+model Tag {
+  id          String       @id @default(cuid()) @db.VarChar(30)
+  name        String       @db.VarChar(100)
+  slug        String       @unique @db.VarChar(191)
+  description String?      @db.VarChar(500)
+  articles    ArticleTag[]
+  createdAt   DateTime     @default(now()) @db.DateTime(3)
+  updatedAt   DateTime     @updatedAt @db.DateTime(3)
+
+  @@map("tags")
+}
+
+model ArticleTag {
+  articleId String   @db.VarChar(30)
+  tagId     String   @db.VarChar(30)
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.DateTime(3)
+  updatedAt DateTime @updatedAt @db.DateTime(3)
+
+  @@id([articleId, tagId])
+  @@index([tagId])
+  @@map("article_tags")
+}
+
+model Project {
+  id             String        @id @default(cuid()) @db.VarChar(30)
+  title          String        @db.VarChar(200)
+  slug           String        @unique @db.VarChar(191)
+  type           ProjectType
+  description    String        @db.Text
+  detail         String?       @db.LongText
+  coverImage     String?       @db.VarChar(500)
+  targetAudience String?       @db.VarChar(500)
+  costLevel      String?       @db.VarChar(100)
+  difficulty     String?       @db.VarChar(100)
+  monetization   String?       @db.VarChar(500)
+  meta           Json?
+  status         ContentStatus @default(DRAFT)
+  sortOrder      Int           @default(0)
+  isFeatured     Boolean       @default(false)
+  publishedAt    DateTime?     @db.DateTime(3)
+  createdAt      DateTime      @default(now()) @db.DateTime(3)
+  updatedAt      DateTime      @updatedAt @db.DateTime(3)
+
+  @@index([type])
+  @@index([status, publishedAt])
+  @@map("projects")
+}
+
+model AiTool {
+  id          String        @id @default(cuid()) @db.VarChar(30)
+  name        String        @db.VarChar(200)
+  slug        String        @unique @db.VarChar(191)
+  description String        @db.Text
+  detail      String?       @db.LongText
+  category    String        @db.VarChar(100)
+  toolUrl     String?       @db.VarChar(1000)
+  embedUrl    String?       @db.VarChar(1000)
+  iconImage   String?       @db.VarChar(500)
+  screenshot  String?       @db.VarChar(500)
+  tags        Json?
+  status      ContentStatus @default(DRAFT)
+  isFeatured  Boolean       @default(false)
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now()) @db.DateTime(3)
+  updatedAt   DateTime      @updatedAt @db.DateTime(3)
+
+  @@index([category, status])
+  @@index([isFeatured, sortOrder])
+  @@map("ai_tools")
+}
+
+model TalentService {
+  id              String        @id @default(cuid()) @db.VarChar(30)
+  title           String        @db.VarChar(200)
+  slug            String        @unique @db.VarChar(191)
+  subtitle        String?       @db.VarChar(300)
+  description     String        @db.Text
+  content         String?       @db.LongText
+  price           Decimal?      @db.Decimal(10, 2)
+  durationMinutes Int?
+  suitableFor     String?       @db.Text
+  deliverables    Json?
+  process         Json?
+  status          ServiceStatus @default(ACTIVE)
+  sortOrder       Int           @default(0)
+  isFeatured      Boolean       @default(false)
+  appointments    Appointment[]
+  createdAt       DateTime      @default(now()) @db.DateTime(3)
+  updatedAt       DateTime      @updatedAt @db.DateTime(3)
+
+  @@index([status])
+  @@map("talent_services")
+}
+
+model Appointment {
+  id            String            @id @default(cuid()) @db.VarChar(30)
+  name          String            @db.VarChar(100)
+  phone         String?           @db.VarChar(50)
+  wechat        String?           @db.VarChar(100)
+  email         String?           @db.VarChar(191)
+  serviceType   String            @db.VarChar(100)
+  serviceId     String?           @db.VarChar(30)
+  scheduledAt   DateTime?         @db.DateTime(3)
+  message       String?           @db.Text
+  status        AppointmentStatus @default(PENDING)
+  source        String?           @db.VarChar(100)
+  notes         String?           @db.Text
+  talentService TalentService?    @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  createdAt     DateTime          @default(now()) @db.DateTime(3)
+  updatedAt     DateTime          @updatedAt @db.DateTime(3)
+
+  @@index([serviceId])
+  @@index([status, scheduledAt])
+  @@map("appointments")
+}
+
+model Case {
+  id          String        @id @default(cuid()) @db.VarChar(30)
+  title       String        @db.VarChar(200)
+  slug        String        @unique @db.VarChar(191)
+  clientName  String?       @db.VarChar(100)
+  serviceType String?       @db.VarChar(100)
+  summary     String        @db.Text
+  content     String?       @db.LongText
+  result      String?       @db.Text
+  quote       String?       @db.Text
+  rating      Int?
+  coverImage  String?       @db.VarChar(500)
+  status      ContentStatus @default(DRAFT)
+  sortOrder   Int           @default(0)
+  isFeatured  Boolean       @default(false)
+  publishedAt DateTime?     @db.DateTime(3)
+  authorId    String?       @db.VarChar(30)
+  author      User?         @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt   DateTime      @default(now()) @db.DateTime(3)
+  updatedAt   DateTime      @updatedAt @db.DateTime(3)
+
+  @@index([authorId])
+  @@index([status, publishedAt])
+  @@map("cases")
+}
+
+model Message {
+  id        String        @id @default(cuid()) @db.VarChar(30)
+  name      String        @db.VarChar(100)
+  email     String?       @db.VarChar(191)
+  phone     String?       @db.VarChar(50)
+  wechat    String?       @db.VarChar(100)
+  subject   String?       @db.VarChar(200)
+  content   String        @db.Text
+  status    MessageStatus @default(UNREAD)
+  source    String?       @db.VarChar(100)
+  ipAddress String?       @db.VarChar(100)
+  userAgent String?       @db.Text
+  repliedAt DateTime?     @db.DateTime(3)
+  createdAt DateTime      @default(now()) @db.DateTime(3)
+  updatedAt DateTime      @updatedAt @db.DateTime(3)
+
+  @@index([status, createdAt])
+  @@map("messages")
+}
+
+model SiteSetting {
+  id           String      @id @default(cuid()) @db.VarChar(30)
+  settingKey   String      @unique @db.VarChar(191)
+  settingValue String      @db.LongText
+  settingType  SettingType @default(STRING)
+  group        String      @default("general") @db.VarChar(100)
+  label        String?     @db.VarChar(200)
+  description  String?     @db.VarChar(500)
+  isPublic     Boolean     @default(true)
+  sortOrder    Int         @default(0)
+  createdAt    DateTime    @default(now()) @db.DateTime(3)
+  updatedAt    DateTime    @updatedAt @db.DateTime(3)
+
+  @@index([group])
+  @@map("site_settings")
+}
+
+model UserSession {
+  id         String   @id @default(cuid()) @db.VarChar(30)
+  tokenHash  String   @unique @db.VarChar(191)
+  userId     String   @db.VarChar(30)
+  expiresAt  DateTime @db.DateTime(3)
+  lastSeenAt DateTime @default(now()) @db.DateTime(3)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @db.DateTime(3)
+  updatedAt  DateTime @updatedAt @db.DateTime(3)
+
+  @@index([userId, expiresAt])
+  @@map("user_sessions")
+}
+
+model Page {
+  id             String        @id @default(cuid()) @db.VarChar(30)
+  slug           String        @unique @db.VarChar(191)
+  title          String        @db.VarChar(200)
+  navigationName String?       @db.VarChar(100)
+  seoTitle       String?       @db.VarChar(200)
+  seoDescription String?       @db.VarChar(500)
+  status         ContentStatus @default(DRAFT)
+  sortOrder      Int           @default(0)
+  isVisible      Boolean       @default(true)
+  publishedAt    DateTime?     @db.DateTime(3)
+  createdById    String?       @db.VarChar(30)
+  createdBy      User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  sections       PageSection[]
+  createdAt      DateTime      @default(now()) @db.DateTime(3)
+  updatedAt      DateTime      @updatedAt @db.DateTime(3)
+
+  @@index([createdById])
+  @@index([status, sortOrder])
+  @@map("pages")
+}
+
+model PageSection {
+  id          String          @id @default(cuid()) @db.VarChar(30)
+  pageId      String          @db.VarChar(30)
+  sectionKey  String          @db.VarChar(100)
+  sectionType PageSectionType @default(CUSTOM)
+  heading     String?         @db.VarChar(300)
+  subheading  String?         @db.VarChar(500)
+  content     Json?
+  sortOrder   Int             @default(0)
+  isVisible   Boolean         @default(true)
+  page        Page            @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now()) @db.DateTime(3)
+  updatedAt   DateTime        @updatedAt @db.DateTime(3)
+
+  @@unique([pageId, sectionKey])
+  @@index([pageId, sortOrder])
+  @@map("page_sections")
+}
+
+model MediaAsset {
+  id           String    @id @default(cuid()) @db.VarChar(30)
+  fileName     String    @db.VarChar(255)
+  storageKey   String    @unique @db.VarChar(500)
+  publicUrl    String    @db.VarChar(1000)
+  mimeType     String    @db.VarChar(100)
+  kind         MediaKind @default(IMAGE)
+  sizeBytes    BigInt
+  width        Int?
+  height       Int?
+  altText      String?   @db.VarChar(300)
+  isPublic     Boolean   @default(false)
+  uploadedById String?   @db.VarChar(30)
+  uploadedBy   User?     @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now()) @db.DateTime(3)
+  updatedAt    DateTime  @updatedAt @db.DateTime(3)
+
+  @@index([uploadedById])
+  @@index([kind, createdAt])
+  @@map("media_assets")
+}
+
+model Workspace {
+  id                String                   @id @default(cuid()) @db.VarChar(30)
+  ownerId           String                   @unique @db.VarChar(30)
+  name              String                   @default("我的成长工作台") @db.VarChar(100)
+  timezone          String                   @default("Asia/Shanghai") @db.VarChar(100)
+  weekStartsOn      Int                      @default(1)
+  currency          String                   @default("CNY") @db.Char(3)
+  settings          Json?
+  owner             User                     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  tasks             WorkspaceTask[]
+  habits            WorkspaceHabit[]
+  projects          WorkspaceProject[]
+  books             ReadingBook[]
+  readingDailyStats ReadingDailyStat[]
+  readingShelfState ReadingShelfState?
+  exercises         ExerciseRecord[]
+  learningTopics    LearningTopic[]
+  inspirations      Inspiration[]
+  reviews           DailyReview[]
+  tags              WorkspaceTag[]
+  connections       ExternalConnection[]
+  importItems       WorkspaceImportItem[]
+  scheduleBlocks    WorkspaceScheduleBlock[]
+  aiConversations   AiConversation[]
+  createdAt         DateTime                 @default(now()) @db.DateTime(3)
+  updatedAt         DateTime                 @updatedAt @db.DateTime(3)
+
+  @@map("workspaces")
+}
+
+model WorkspaceImportItem {
+  id          String    @id @default(cuid()) @db.VarChar(30)
+  workspaceId String    @db.VarChar(30)
+  entityType  String    @db.VarChar(100)
+  fingerprint String    @db.Char(64)
+  recordId    String?   @db.VarChar(30)
+  sourceRefs  Json?
+  importedAt  DateTime  @default(now()) @db.DateTime(3)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now()) @db.DateTime(3)
+  updatedAt   DateTime  @updatedAt @db.DateTime(3)
+
+  @@unique([workspaceId, entityType, fingerprint])
+  @@index([workspaceId, entityType])
+  @@map("workspace_import_items")
+}
+
+model WorkspaceTask {
+  id           String                @id @default(cuid()) @db.VarChar(30)
+  workspaceId  String                @db.VarChar(30)
+  parentId     String?               @db.VarChar(30)
+  habitId      String?               @db.VarChar(30)
+  projectId    String?               @db.VarChar(30)
+  title        String                @db.VarChar(300)
+  description  String?               @db.Text
+  type         WorkspaceTaskType
+  priority     WorkspaceTaskPriority @default(MEDIUM)
+  urgency      WorkspaceTaskPriority @default(MEDIUM)
+  quadrant     WorkspaceTaskQuadrant @default(LOW)
+  status       WorkspaceTaskStatus   @default(TODO)
+  progress     Int                   @default(0)
+  dueTime      String?               @db.VarChar(50)
+  isGoal       Boolean               @default(false)
+  startDate    DateTime?             @db.Date
+  dueDate      DateTime?             @db.Date
+  sortOrder    Int                   @default(0)
+  completedAt  DateTime?             @db.DateTime(3)
+  archivedAt   DateTime?             @db.DateTime(3)
+  workspace    Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  parent       WorkspaceTask?        @relation("WorkspaceTaskHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children     WorkspaceTask[]       @relation("WorkspaceTaskHierarchy")
+  habit        WorkspaceHabit?       @relation(fields: [habitId], references: [id], onDelete: SetNull)
+  project      WorkspaceProject?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  dailyRecords WorkspaceTaskRecord[]
+  goalStages   WorkspaceGoalStage[]
+  createdAt    DateTime              @default(now()) @db.DateTime(3)
+  updatedAt    DateTime              @updatedAt @db.DateTime(3)
+
+  @@index([workspaceId, type, status])
+  @@index([workspaceId, dueDate])
+  @@index([parentId])
+  @@index([habitId])
+  @@index([projectId])
+  @@index([workspaceId, isGoal])
+  @@map("workspace_tasks")
+}
+
+model WorkspaceGoalStage {
+  id         String                   @id @default(cuid()) @db.VarChar(30)
+  goalId     String                   @db.VarChar(30)
+  phase      WorkspaceGoalPhaseType?
+  name       String?                  @db.VarChar(200)
+  startDate  DateTime?                @db.Date
+  endDate    DateTime?                @db.Date
+  progress   Int                      @default(0)
+  analysis   String?                  @db.Text
+  nextAction String?                  @db.Text
+  sortOrder  Int                      @default(0)
+  goal       WorkspaceTask            @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  logs       WorkspaceGoalProgressLog[]
+  dailyActions WorkspaceGoalDailyAction[]
+  createdAt  DateTime                 @default(now()) @db.DateTime(3)
+  updatedAt  DateTime                 @updatedAt @db.DateTime(3)
+
+  @@unique([goalId, phase])
+  @@index([goalId, sortOrder])
+  @@map("workspace_goal_stages")
+}
+
+model WorkspaceGoalDailyAction {
+  id          String             @id @default(cuid()) @db.VarChar(30)
+  stageId     String             @db.VarChar(30)
+  title       String             @db.VarChar(300)
+  actionDate  DateTime           @db.Date
+  completed   Boolean            @default(false)
+  sortOrder   Int                @default(0)
+  completedAt DateTime?          @db.DateTime(3)
+  stage       WorkspaceGoalStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  createdAt   DateTime           @default(now()) @db.DateTime(3)
+  updatedAt   DateTime           @updatedAt @db.DateTime(3)
+
+  @@index([stageId, actionDate, sortOrder])
+  @@index([actionDate, completed])
+  @@map("workspace_goal_daily_actions")
+}
+
+model WorkspaceGoalProgressLog {
+  id         String             @id @default(cuid()) @db.VarChar(30)
+  stageId    String             @db.VarChar(30)
+  content    String             @db.Text
+  progress   Int
+  nextAction String?            @db.Text
+  recordedOn DateTime           @db.Date
+  stage      WorkspaceGoalStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  createdAt  DateTime           @default(now()) @db.DateTime(3)
+  updatedAt  DateTime           @updatedAt @db.DateTime(3)
+
+  @@index([stageId, recordedOn])
+  @@map("workspace_goal_progress_logs")
+}
+
+model WorkspaceTaskRecord {
+  id          String        @id @default(cuid()) @db.VarChar(30)
+  taskId      String        @db.VarChar(30)
+  recordDate  DateTime      @db.Date
+  completed   Boolean       @default(false)
+  progress    Int           @default(0)
+  notes       String?       @db.Text
+  completedAt DateTime?     @db.DateTime(3)
+  task        WorkspaceTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now()) @db.DateTime(3)
+  updatedAt   DateTime      @updatedAt @db.DateTime(3)
+
+  @@unique([taskId, recordDate])
+  @@index([recordDate, completed])
+  @@map("workspace_task_records")
+}
+
+model WorkspaceHabit {
+  id          String                 @id @default(cuid()) @db.VarChar(30)
+  workspaceId String                 @db.VarChar(30)
+  name        String                 @db.VarChar(100)
+  type        WorkspaceHabitType
+  description String?                @db.VarChar(500)
+  frequency   HabitFrequency         @default(DAILY)
+  targetCount Int                    @default(1)
+  targetValue Decimal?               @db.Decimal(10, 2)
+  unit        String?                @db.VarChar(50)
+  color       String?                @db.VarChar(30)
+  icon        String?                @db.VarChar(100)
+  sortOrder   Int                    @default(0)
+  isActive    Boolean                @default(true)
+  workspace   Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  records     WorkspaceHabitRecord[]
+  linkedTasks WorkspaceTask[]
+  createdAt   DateTime               @default(now()) @db.DateTime(3)
+  updatedAt   DateTime               @updatedAt @db.DateTime(3)
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId, isActive, sortOrder])
+  @@map("workspace_habits")
+}
+
+model WorkspaceHabitRecord {
+  id         String         @id @default(cuid()) @db.VarChar(30)
+  habitId    String         @db.VarChar(30)
+  recordDate DateTime       @db.Date
+  completed  Boolean        @default(false)
+  value      Decimal?       @db.Decimal(10, 2)
+  notes      String?        @db.Text
+  habit      WorkspaceHabit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  createdAt  DateTime       @default(now()) @db.DateTime(3)
+  updatedAt  DateTime       @updatedAt @db.DateTime(3)
+
+  @@unique([habitId, recordDate])
+  @@index([recordDate, completed])
+  @@map("workspace_habit_records")
+}
+
+model WorkspaceProject {
+  id             String                   @id @default(cuid()) @db.VarChar(30)
+  workspaceId    String                   @db.VarChar(30)
+  name           String                   @db.VarChar(200)
+  description    String?                  @db.Text
+  status         WorkspaceProjectStatus   @default(ACTIVE)
+  stage          String?                  @db.VarChar(200)
+  progress       Int                      @default(0)
+  nextAction     String?                  @db.VarChar(500)
+  riskLevel      WorkspaceRiskLevel       @default(LOW)
+  riskReason     String?                  @db.Text
+  currency       String                   @default("CNY") @db.Char(3)
+  startedOn      DateTime?                @db.Date
+  endedOn        DateTime?                @db.Date
+  sortOrder      Int                      @default(0)
+  workspace      Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  transactions   WorkspaceTransaction[]
+  tasks          WorkspaceTask[]
+  stages         WorkspaceProjectStage[]
+  scheduleBlocks WorkspaceScheduleBlock[]
+  createdAt      DateTime                 @default(now()) @db.DateTime(3)
+  updatedAt      DateTime                 @updatedAt @db.DateTime(3)
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId, status])
+  @@map("workspace_projects")
+}
+
+model WorkspaceProjectStage {
+  id         String                     @id @default(cuid()) @db.VarChar(30)
+  projectId  String                     @db.VarChar(30)
+  phase      WorkspaceGoalPhaseType
+  progress   Int                        @default(0)
+  analysis   String?                    @db.Text
+  nextAction String?                    @db.Text
+  sortOrder  Int                        @default(0)
+  project    WorkspaceProject           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  logs       WorkspaceProjectProgressLog[]
+  createdAt  DateTime                   @default(now()) @db.DateTime(3)
+  updatedAt  DateTime                   @updatedAt @db.DateTime(3)
+
+  @@unique([projectId, phase])
+  @@index([projectId, sortOrder])
+  @@map("workspace_project_stages")
+}
+
+model WorkspaceProjectProgressLog {
+  id         String                @id @default(cuid()) @db.VarChar(30)
+  stageId    String                @db.VarChar(30)
+  content    String                @db.Text
+  progress   Int
+  nextAction String?               @db.Text
+  recordedOn DateTime              @db.Date
+  stage      WorkspaceProjectStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  createdAt  DateTime              @default(now()) @db.DateTime(3)
+  updatedAt  DateTime              @updatedAt @db.DateTime(3)
+
+  @@index([stageId, recordedOn])
+  @@map("workspace_project_progress_logs")
+}
+
+model WorkspaceScheduleBlock {
+  id          String            @id @default(cuid()) @db.VarChar(30)
+  workspaceId String            @db.VarChar(30)
+  projectId   String?           @db.VarChar(30)
+  blockDate   DateTime?         @db.Date
+  timeText    String            @db.VarChar(100)
+  title       String            @db.VarChar(300)
+  tone        String            @default("neutral") @db.VarChar(30)
+  sortOrder   Int               @default(0)
+  workspace   Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project     WorkspaceProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdAt   DateTime          @default(now()) @db.DateTime(3)
+  updatedAt   DateTime          @updatedAt @db.DateTime(3)
+
+  @@index([workspaceId, blockDate, sortOrder])
+  @@index([projectId])
+  @@map("workspace_schedule_blocks")
+}
+
+model WorkspaceTransaction {
+  id           String                   @id @default(cuid()) @db.VarChar(30)
+  projectId    String                   @db.VarChar(30)
+  type         WorkspaceTransactionType
+  amount       Decimal                  @db.Decimal(12, 2)
+  category     String?                  @db.VarChar(100)
+  note         String?                  @db.VarChar(500)
+  transactedOn DateTime                 @db.Date
+  project      WorkspaceProject         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt    DateTime                 @default(now()) @db.DateTime(3)
+  updatedAt    DateTime                 @updatedAt @db.DateTime(3)
+
+  @@index([projectId, transactedOn])
+  @@index([type, transactedOn])
+  @@map("workspace_transactions")
+}
+
+model ReadingBook {
+  id               String           @id @default(cuid()) @db.VarChar(30)
+  workspaceId      String           @db.VarChar(30)
+  title            String           @db.VarChar(300)
+  author           String?          @db.VarChar(200)
+  coverUrl         String?          @db.VarChar(1000)
+  category         String?          @db.VarChar(300)
+  totalPages       Int?
+  currentPage      Int              @default(0)
+  progress         Int              @default(0)
+  totalReadSeconds Int              @default(0)
+  lastReadAt       DateTime?        @db.DateTime(3)
+  isAudio          Boolean          @default(false)
+  source           ReadingSource    @default(MANUAL)
+  externalId       String?          @db.VarChar(191)
+  startedOn        DateTime?        @db.Date
+  finishedOn       DateTime?        @db.Date
+  isArchived       Boolean          @default(false)
+  workspace        Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions         ReadingSession[]
+  createdAt        DateTime         @default(now()) @db.DateTime(3)
+  updatedAt        DateTime         @updatedAt @db.DateTime(3)
+
+  @@unique([workspaceId, source, externalId])
+  @@index([workspaceId, isArchived])
+  @@index([workspaceId, source, externalId])
+  @@map("reading_books")
+}
+
+model ReadingSession {
+  id              String      @id @default(cuid()) @db.VarChar(30)
+  bookId          String      @db.VarChar(30)
+  readOn          DateTime    @db.Date
+  durationMinutes Int         @default(0)
+  startPage       Int?
+  endPage         Int?
+  metric          String?     @db.VarChar(100)
+  note            String?     @db.LongText
+  book            ReadingBook @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  createdAt       DateTime    @default(now()) @db.DateTime(3)
+  updatedAt       DateTime    @updatedAt @db.DateTime(3)
+
+  @@index([bookId, readOn])
+  @@index([readOn])
+  @@map("reading_sessions")
+}
+
+model ReadingDailyStat {
+  id              String        @id @default(cuid()) @db.VarChar(30)
+  workspaceId     String        @db.VarChar(30)
+  readOn          DateTime      @db.Date
+  durationSeconds Int           @default(0)
+  source          ReadingSource @default(WEREAD)
+  workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now()) @db.DateTime(3)
+  updatedAt       DateTime      @updatedAt @db.DateTime(3)
+
+  @@unique([workspaceId, readOn, source])
+  @@index([workspaceId, readOn])
+  @@map("reading_daily_stats")
+}
+
+model ReadingShelfState {
+  workspaceId          String    @id @db.VarChar(30)
+  electronicBookCount  Int       @default(0)
+  audioBookCount       Int       @default(0)
+  hasArticleCollection Boolean   @default(false)
+  lastSyncedAt         DateTime? @db.DateTime(3)
+  workspace            Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt            DateTime  @default(now()) @db.DateTime(3)
+  updatedAt            DateTime  @updatedAt @db.DateTime(3)
+
+  @@map("reading_shelf_states")
+}
+
+model ExerciseRecord {
+  id              String                @id @default(cuid()) @db.VarChar(30)
+  workspaceId     String                @db.VarChar(30)
+  title           String?               @db.VarChar(300)
+  exerciseType    WorkspaceExerciseType
+  exercisedOn     DateTime              @db.Date
+  durationMinutes Int                   @default(0)
+  distanceKm      Decimal?              @db.Decimal(8, 2)
+  calories        Int?
+  metric          String?               @db.VarChar(100)
+  notes           String?               @db.Text
+  workspace       Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt       DateTime              @default(now()) @db.DateTime(3)
+  updatedAt       DateTime              @updatedAt @db.DateTime(3)
+
+  @@index([workspaceId, exercisedOn])
+  @@map("exercise_records")
+}
+
+model LearningTopic {
+  id          String            @id @default(cuid()) @db.VarChar(30)
+  workspaceId String            @db.VarChar(30)
+  title       String            @db.VarChar(300)
+  description String?           @db.Text
+  isArchived  Boolean           @default(false)
+  workspace   Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions    LearningSession[]
+  createdAt   DateTime          @default(now()) @db.DateTime(3)
+  updatedAt   DateTime          @updatedAt @db.DateTime(3)
+
+  @@unique([workspaceId, title])
+  @@index([workspaceId, isArchived])
+  @@map("learning_topics")
+}
+
+model LearningSession {
+  id              String        @id @default(cuid()) @db.VarChar(30)
+  topicId         String        @db.VarChar(30)
+  learnedOn       DateTime      @db.Date
+  durationMinutes Int           @default(0)
+  metric          String?       @db.VarChar(100)
+  notes           String?       @db.LongText
+  topic           LearningTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now()) @db.DateTime(3)
+  updatedAt       DateTime      @updatedAt @db.DateTime(3)
+
+  @@index([topicId, learnedOn])
+  @@index([learnedOn])
+  @@map("learning_sessions")
+}
+
+model Inspiration {
+  id          String           @id @default(cuid()) @db.VarChar(30)
+  workspaceId String           @db.VarChar(30)
+  title       String?          @db.VarChar(300)
+  content     String           @db.LongText
+  source      String?          @db.VarChar(200)
+  metric      String?          @db.VarChar(100)
+  capturedAt  DateTime         @default(now()) @db.DateTime(3)
+  isPinned    Boolean          @default(false)
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tags        InspirationTag[]
+  createdAt   DateTime         @default(now()) @db.DateTime(3)
+  updatedAt   DateTime         @updatedAt @db.DateTime(3)
+
+  @@index([workspaceId, capturedAt])
+  @@index([workspaceId, isPinned])
+  @@map("inspirations")
+}
+
+model WorkspaceTag {
+  id           String           @id @default(cuid()) @db.VarChar(30)
+  workspaceId  String           @db.VarChar(30)
+  name         String           @db.VarChar(100)
+  color        String?          @db.VarChar(30)
+  workspace    Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  inspirations InspirationTag[]
+  createdAt    DateTime         @default(now()) @db.DateTime(3)
+  updatedAt    DateTime         @updatedAt @db.DateTime(3)
+
+  @@unique([workspaceId, name])
+  @@map("workspace_tags")
+}
+
+model InspirationTag {
+  inspirationId String       @db.VarChar(30)
+  tagId         String       @db.VarChar(30)
+  inspiration   Inspiration  @relation(fields: [inspirationId], references: [id], onDelete: Cascade)
+  tag           WorkspaceTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt     DateTime     @default(now()) @db.DateTime(3)
+  updatedAt     DateTime     @updatedAt @db.DateTime(3)
+
+  @@id([inspirationId, tagId])
+  @@index([tagId])
+  @@map("inspiration_tags")
+}
+
+model DailyReview {
+  id               String    @id @default(cuid()) @db.VarChar(30)
+  workspaceId      String    @db.VarChar(30)
+  reviewDate       DateTime  @db.Date
+  title            String?   @db.VarChar(300)
+  content          String?   @db.LongText
+  metric           String?   @db.VarChar(100)
+  wins             String?   @db.Text
+  challenges       String?   @db.Text
+  nextActions      String?   @db.Text
+  moodScore        Int?
+  taskSnapshot     Json?
+  syncedToObsidian Boolean   @default(false)
+  syncedToIma      Boolean   @default(false)
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt        DateTime  @default(now()) @db.DateTime(3)
+  updatedAt        DateTime  @updatedAt @db.DateTime(3)
+
+  @@unique([workspaceId, reviewDate])
+  @@index([workspaceId, reviewDate])
+  @@map("daily_reviews")
+}
+
+model ExternalConnection {
+  id              String                   @id @default(cuid()) @db.VarChar(30)
+  workspaceId     String                   @db.VarChar(30)
+  provider        ExternalProvider
+  status          ExternalConnectionStatus @default(DISCONNECTED)
+  encryptedConfig String?                  @db.LongText
+  lastSyncedAt    DateTime?                @db.DateTime(3)
+  lastError       String?                  @db.Text
+  workspace       Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  syncLogs        ExternalSyncLog[]
+  createdAt       DateTime                 @default(now()) @db.DateTime(3)
+  updatedAt       DateTime                 @updatedAt @db.DateTime(3)
+
+  @@unique([workspaceId, provider])
+  @@index([status, lastSyncedAt])
+  @@map("external_connections")
+}
+
+model ExternalSyncLog {
+  id           String             @id @default(cuid()) @db.VarChar(30)
+  connectionId String             @db.VarChar(30)
+  resourceType String             @db.VarChar(100)
+  resourceId   String?            @db.VarChar(30)
+  status       ExternalSyncStatus @default(PENDING)
+  message      String?            @db.Text
+  startedAt    DateTime           @default(now()) @db.DateTime(3)
+  completedAt  DateTime?          @db.DateTime(3)
+  connection   ExternalConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime           @default(now()) @db.DateTime(3)
+  updatedAt    DateTime           @updatedAt @db.DateTime(3)
+
+  @@index([connectionId, startedAt])
+  @@index([status, startedAt])
+  @@map("external_sync_logs")
+}
+
+model AiConversation {
+  id                String      @id @default(cuid()) @db.VarChar(30)
+  workspaceId       String      @db.VarChar(30)
+  title             String      @default("成长助手") @db.VarChar(200)
+  provider          String?     @db.VarChar(100)
+  model             String?     @db.VarChar(200)
+  externalSessionId String?     @db.VarChar(191)
+  workspace         Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  messages          AiMessage[]
+  createdAt         DateTime    @default(now()) @db.DateTime(3)
+  updatedAt         DateTime    @updatedAt @db.DateTime(3)
+
+  @@index([workspaceId, updatedAt])
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String         @id @default(cuid()) @db.VarChar(30)
+  conversationId String         @db.VarChar(30)
+  role           AiMessageRole
+  content        String         @db.LongText
+  model          String?        @db.VarChar(200)
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime       @default(now()) @db.DateTime(3)
+  updatedAt      DateTime       @updatedAt @db.DateTime(3)
+
+  @@index([conversationId, createdAt])
+  @@map("ai_messages")
+}
