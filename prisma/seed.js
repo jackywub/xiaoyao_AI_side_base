@@ -514,6 +514,62 @@ async function main() {
     });
   }
 
+  // ====== AI Tools: 新增「学习小台」+ 现有工具换对应展示图 ======
+  const TOOL_SCREENSHOT_MAP = {
+    "成长工作台": "/assets/cards/tool-growth-desk.jpg",
+    "Midjourney": "/assets/cards/tool-midjourney.jpg",
+    "ChatGPT": "/assets/cards/tool-chatgpt.jpg",
+    "公众号智能体": "/assets/cards/tool-wechat-agent.jpg",
+    "Notion AI": "/assets/cards/tool-notion-ai.jpg"
+  };
+
+  // 新增 / 更新「学习小台」工具
+  await prisma.aiTool.upsert({
+    where: { slug: "study-desk" },
+    update: {
+      name: "学习小台",
+      description: "孩子专属的学习小台，支持每日任务打卡、错题本、闯关积分奖励。家长可发布任务、管理奖励兑换，帮助孩子养成学习习惯。",
+      detail: "学习小台是一个面向孩子的学习管理工具，包含四大核心功能：\n\n• 每日学习任务台：家长发布作业打卡/课程复习/预习等任务，孩子完成后获得积分。\n• 错题本：记录错题、标记掌握程度（未掌握→在巩固→已掌握），支持重做练习。\n• 闯关积分奖励：完成打卡和错题巩固均可赚取积分，积分可在奖励商城兑换心愿（如看动画片、买书、去公园）。\n• 家长管理：设置家长密码、添加奖励、确认兑换请求、备份恢复数据。\n\n数据保存在浏览器本地存储中，支持 JSON 格式导入导出备份。适合小学阶段的孩子使用，通过游戏化的积分机制激发学习动力。",
+      category: "other",
+      toolUrl: "/study-desk.html",
+      embedUrl: null,
+      iconImage: "/assets/cards/tool-study-desk.jpg",
+      screenshot: "/assets/cards/tool-study-desk.jpg",
+      tags: ["学习", "教育", "儿童", "效率"],
+      status: "PUBLISHED",
+      sortOrder: 99,
+      isFeatured: false
+    },
+    create: {
+      name: "学习小台",
+      slug: "study-desk",
+      description: "孩子专属的学习小台，支持每日任务打卡、错题本、闯关积分奖励。家长可发布任务、管理奖励兑换，帮助孩子养成学习习惯。",
+      detail: "学习小台是一个面向孩子的学习管理工具，包含四大核心功能：\n\n• 每日学习任务台：家长发布作业打卡/课程复习/预习等任务，孩子完成后获得积分。\n• 错题本：记录错题、标记掌握程度（未掌握→在巩固→已掌握），支持重做练习。\n• 闯关积分奖励：完成打卡和错题巩固均可赚取积分，积分可在奖励商城兑换心愿（如看动画片、买书、去公园）。\n• 家长管理：设置家长密码、添加奖励、确认兑换请求、备份恢复数据。\n\n数据保存在浏览器本地存储中，支持 JSON 格式导入导出备份。适合小学阶段的孩子使用，通过游戏化的积分机制激发学习动力。",
+      category: "other",
+      toolUrl: "/study-desk.html",
+      embedUrl: null,
+      iconImage: "/assets/cards/tool-study-desk.jpg",
+      screenshot: "/assets/cards/tool-study-desk.jpg",
+      tags: ["学习", "教育", "儿童", "效率"],
+      status: "PUBLISHED",
+      sortOrder: 99,
+      isFeatured: false
+    }
+  });
+
+  // 修复现有工具的截图（仅当仍为空或指向 icon 小图标时才替换）
+  const existingTools = await prisma.aiTool.findMany();
+  for (const t of existingTools) {
+    const img = TOOL_SCREENSHOT_MAP[t.name];
+    if (!img) continue;
+    if (!t.screenshot || t.screenshot.startsWith("/assets/icons/")) {
+      await prisma.aiTool.update({
+        where: { id: t.id },
+        data: { screenshot: img }
+      });
+    }
+  }
+
   console.log("Seed data initialized.");
 }
 

@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>我的学习小台</title>
+<style>
+:root{
+  --c1:#e64980; --c2:#845ef7; --c3:#f783ac;
+  --bg:#fff0f6; --card:#ffffff; --ink:#3b2a3d; --muted:#a587a0;
+  --line:#ffe3ee; --ok:#2f9e44; --warn:#e03131; --btn:52px;
+  --t1:#1c7ed6; --t2:#2f9e44; --t3:#f08c00; --t4:#845ef7;
+}
+body.mode-parent{
+  --c1:#b07ba0; --c2:#7a6ba8; --c3:#c8a6c0;
+  --bg:#f6f3fa; --card:#ffffff; --ink:#403a47; --muted:#9b94a3;
+  --line:#ece6f2; --btn:46px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg); color:var(--ink); font-size:16px; line-height:1.5;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:inline-block;vertical-align:-4px;}
+.icon-solid{fill:currentColor;stroke:none;}
+
+/* ===== 布局：左栏 + 右页 ===== */
+.app{display:flex;align-items:flex-start;max-width:1120px;margin:0 auto;}
+.sidebar{position:sticky;top:0;align-self:flex-start;width:232px;flex:0 0 232px;height:100vh;height:100dvh;
+  background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;
+  padding:18px 14px;gap:14px;overflow-y:auto;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand .logo{width:34px;height:34px;flex:0 0 34px;color:var(--c1);}
+.brand .title{font-size:18px;font-weight:800;letter-spacing:.5px;}
+.main{flex:1;min-width:0;padding:18px 22px 50px;}
+
+.topbar{display:none;}
+.mobile-nav{display:none;}
+
+/* 侧边栏内导航 */
+.nav-side{display:flex;flex-direction:column;gap:8px;}
+.nav-side button{width:100%;text-align:left;border:1px solid var(--line);background:var(--card);
+  color:var(--muted);font-weight:800;font-size:15px;border-radius:13px;min-height:50px;padding:0 16px;cursor:pointer;}
+.nav-side button.on{background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border-color:transparent;
+  box-shadow:0 4px 12px rgba(230,73,128,.2);}
+
+/* 模式切换 */
+.modeswitch{display:flex;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px;}
+.modeswitch button{flex:1;border:none;background:transparent;color:var(--muted);font-weight:800;font-size:15px;
+  border-radius:11px;min-height:46px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;}
+.modeswitch button.on{background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;box-shadow:0 4px 12px rgba(230,73,128,.2);}
+.sidebar .modeswitch{margin:0;}
+
+/* 侧边栏底部工具 */
+.side-util{margin-top:auto;display:flex;gap:8px;}
+.side-util button{flex:1;border:1px solid var(--line);background:var(--card);color:var(--c1);
+  border-radius:12px;min-height:46px;font-size:14px;font-weight:800;cursor:pointer;display:flex;
+  align-items:center;justify-content:center;gap:5px;}
+.side-util button:active{transform:scale(.96);}
+
+/* 顶栏工具（移动端复用） */
+.util{display:flex;gap:8px;}
+.util button{border:1px solid var(--line);background:var(--card);color:var(--c1);
+  border-radius:12px;min-width:44px;min-height:44px;padding:0 10px;display:flex;align-items:center;gap:5px;
+  font-size:13px;font-weight:700;cursor:pointer;}
+
+/* 今天要处理 */
+.today{background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border-radius:20px;padding:16px;margin-bottom:16px;box-shadow:0 8px 22px rgba(230,73,128,.25);}
+.today h2{margin:0 0 4px;font-size:16px;display:flex;align-items:center;gap:6px;}
+.today .sub{font-size:12px;opacity:.9;margin-bottom:10px;}
+.today .empty{font-size:14px;opacity:.95;padding:8px 0;}
+.titem{background:rgba(255,255,255,.18);border-radius:14px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+.titem.over{background:rgba(255,255,255,.28);border:1px solid rgba(255,255,255,.55);}
+.titem .info{flex:1;min-width:0;}
+.titem .nm{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.titem .meta{font-size:12px;opacity:.95;}
+.titem .meta b{color:#fff200;}
+.titem .do{min-width:var(--btn);min-height:var(--btn);border:none;border-radius:14px;background:#fff;color:var(--c1);font-weight:800;font-size:14px;cursor:pointer;flex:0 0 auto;}
+.titem .do:active{transform:scale(.94);}
+
+/* 卡片与分区 */
+.section{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px;}
+.section h3{margin:0 0 12px;font-size:17px;display:flex;align-items:center;gap:8px;color:var(--ink);}
+.section h3 .pill{margin-left:auto;font-size:12px;font-weight:700;color:var(--c1);background:var(--line);padding:3px 10px;border-radius:20px;}
+
+/* 任务列表 */
+.task{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;display:flex;align-items:center;gap:12px;}
+.task.done{opacity:.6;background:#faf7fb;}
+.task .chk{width:var(--btn);height:var(--btn);flex:0 0 var(--btn);border-radius:14px;border:2px solid var(--c1);background:#fff;color:var(--c1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;}
+.task.done .chk{background:var(--ok);border-color:var(--ok);color:#fff;}
+.task .body{flex:1;min-width:0;}
+.task .nm{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.task .meta{font-size:12px;color:var(--muted);margin-top:2px;}
+.badge{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;color:#fff;margin-right:6px;}
+.b-t1{background:var(--t1);} .b-t2{background:var(--t2);} .b-t3{background:var(--t3);} .b-t4{background:var(--t4);}
+.pts{font-size:12px;font-weight:800;color:var(--c2);}
+.del{width:40px;height:40px;flex:0 0 40px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:10px;}
+.del:active{background:var(--line);}
+
+/* 错题 */
+.mis{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;}
+.mis .top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.mis .subj{font-weight:800;font-size:14px;color:var(--c2);}
+.mis .q{font-weight:700;font-size:15px;margin-bottom:6px;}
+.mis .row{font-size:14px;margin:3px 0;}
+.mis .row .lab{color:var(--muted);font-size:12px;margin-right:4px;}
+.wrong{color:var(--warn);font-weight:700;} .right{color:var(--ok);font-weight:700;}
+.mis .acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.mbtn{min-height:46px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--c1);font-weight:800;font-size:14px;cursor:pointer;}
+.mbtn:active{transform:scale(.96);}
+.mastery{font-size:12px;font-weight:800;padding:4px 10px;border-radius:20px;}
+.m-0{background:#ffe3e3;color:var(--warn);} .m-1{background:#fff3bf;color:#f08c00;} .m-2{background:#d3f9d8;color:var(--ok);}
+
+/* 积分 */
+.ptop{display:flex;align-items:center;gap:16px;margin-bottom:14px;}
+.donut{flex:0 0 110px;width:110px;height:110px;}
+.ptnum{flex:1;}
+.ptnum .big{font-size:40px;font-weight:900;color:var(--c1);line-height:1;}
+.ptnum .lab{font-size:13px;color:var(--muted);margin-top:4px;}
+.reward{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;display:flex;align-items:center;gap:12px;}
+.reward .info{flex:1;}
+.reward .rn{font-weight:700;font-size:15px;}
+.reward .rc{font-size:13px;color:var(--c2);font-weight:800;}
+.reward .ex{min-height:var(--btn);padding:0 16px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;font-weight:800;cursor:pointer;}
+.reward .ex:disabled{background:#e9dde7;color:#b9a9b3;cursor:not-allowed;}
+.reward .ex:active:not(:disabled){transform:scale(.95);}
+.rec{border:1px dashed var(--line);border-radius:12px;padding:8px 12px;margin-bottom:8px;font-size:13px;display:flex;justify-content:space-between;gap:8px;}
+.rec .st-p{color:var(--t3);font-weight:800;} .rec .st-a{color:var(--ok);font-weight:800;}
+
+/* 表单 */
+form.fm{background:#faf7fb;border:1px dashed var(--line);border-radius:14px;padding:12px;margin-bottom:14px;}
+form.fm .ttl{font-size:13px;font-weight:800;color:var(--c1);margin-bottom:8px;}
+.fld{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.fld label{font-size:12px;color:var(--muted);font-weight:700;}
+.fld input,.fld select{font-size:16px;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);min-height:46px;}
+.fld textarea{font-size:16px;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);min-height:60px;resize:vertical;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sbtn{width:100%;min-height:var(--btn);border:none;border-radius:13px;background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;font-weight:800;font-size:16px;cursor:pointer;}
+.sbtn:active{transform:scale(.98);}
+.sbtn.ghost{background:#fff;color:var(--c1);border:1px solid var(--line);}
+.subh{font-size:14px;font-weight:800;color:var(--ink);margin:14px 0 8px;display:flex;align-items:center;gap:6px;}
+
+/* 提示 */
+.hint{font-size:12px;color:var(--muted);text-align:center;padding:10px;}
+.hint.show{background:#fff9db;color:#e67700;border-radius:12px;font-weight:700;}
+
+/* 弹窗 */
+.mask{position:fixed;inset:0;background:rgba(40,20,40,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;}
+.mask.show{display:flex;}
+.modal{background:#fff;border-radius:20px;padding:22px;width:100%;max-width:340px;box-shadow:0 20px 50px rgba(0,0,0,.3);}
+.modal h3{margin:0 0 6px;font-size:18px;color:var(--c1);}
+.modal p{font-size:13px;color:var(--muted);margin:0 0 14px;}
+.modal input{width:100%;font-size:22px;letter-spacing:8px;text-align:center;padding:12px;border:1px solid var(--line);border-radius:12px;min-height:52px;margin-bottom:12px;}
+.modal .mrow{display:flex;gap:10px;}
+.modal .mrow button{flex:1;min-height:50px;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer;border:none;}
+.modal .ok{background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;}
+.modal .no{background:#f1eef3;color:var(--muted);}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(40,20,40,.92);color:#fff;padding:11px 18px;border-radius:24px;font-size:14px;font-weight:700;z-index:99;opacity:0;transition:opacity .25s;pointer-events:none;max-width:80%;text-align:center;}
+.toast.show{opacity:1;}
+
+/* ===== 移动端：左栏收起为底部 Tab ===== */
+@media(max-width:768px){
+  .app{display:block;max-width:none;}
+  .sidebar{display:none;}
+  .topbar{display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:20;
+    background:var(--bg);padding:8px 12px;border-bottom:1px solid var(--line);}
+  .topbar .brand.small .logo{width:28px;height:28px;}
+  .topbar .brand.small .title{font-size:15px;}
+  .topbar .modeswitch.compact{flex:0 0 auto;margin:0;min-width:120px;}
+  .topbar .modeswitch.compact button{min-height:40px;font-size:13px;}
+  .topbar .util{margin-left:auto;}
+  .topbar .util button{min-height:40px;padding:0 8px;font-size:12px;}
+  .main{padding:14px 14px 100px;}
+  .mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--card);
+    border-top:1px solid var(--line);padding:8px 8px calc(8px + env(safe-area-inset-bottom));
+    justify-content:space-around;z-index:30;box-shadow:0 -4px 16px rgba(0,0,0,.06);}
+  .mobile-nav button{flex:1;min-height:52px;border:none;background:transparent;color:var(--muted);
+    border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;}
+  .mobile-nav button.on{background:var(--line);color:var(--c1);}
+}
+</style>
+</head>
+<body class="mode-child">
+<div class="app">
+
+  <!-- 左侧菜单栏（桌面） -->
+  <aside class="sidebar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 24 24"><path d="M12 2l2.4 6.9H22l-5.8 4.3 2.2 7-6.4-4.6L5.6 20l2.2-7L2 8.9h7.6z" fill="currentColor"/></svg>
+      <div class="title">我的学习小台</div>
+    </div>
+    <div class="modeswitch">
+      <button id="mChild" class="on" onclick="switchMode('child')">孩子模式</button>
+      <button id="mParent" onclick="switchMode('parent')"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;vertical-align:-3px;"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> 家长模式</button>
+    </div>
+    <nav class="nav-side" id="nav-side"></nav>
+    <div class="side-util">
+      <button onclick="exportData()"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>备份</button>
+      <button onclick="document.getElementById('imp').click()"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M12 21V9m0 0l-4 4m4-4l4 4M5 3h14"/></svg>恢复</button>
+    </div>
+  </aside>
+
+  <!-- 右侧页面 -->
+  <main class="main">
+    <!-- 移动端顶栏 -->
+    <div class="topbar">
+      <div class="brand small">
+        <svg class="logo" viewBox="0 0 24 24"><path d="M12 2l2.4 6.9H22l-5.8 4.3 2.2 7-6.4-4.6L5.6 20l2.2-7L2 8.9h7.6z" fill="currentColor"/></svg>
+        <div class="title">学习小台</div>
+      </div>
+      <div class="modeswitch compact">
+        <button id="mChildM" class="on" onclick="switchMode('child')">孩子</button>
+        <button id="mParentM" onclick="switchMode('parent')">家长</button>
+      </div>
+      <div class="util">
+        <button onclick="exportData()" title="备份"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg></button>
+        <button onclick="document.getElementById('imp').click()" title="恢复"><svg class="icon" viewBox="0 0 24 24"><path d="M12 21V9m0 0l-4 4m4-4l4 4M5 3h14"/></svg></button>
+      </div>
+    </div>
+
+    <div class="today" id="todayBox"></div>
+    <div id="content"></div>
+    <div class="hint" id="hint"></div>
+  </main>
+
+  <!-- 移动端底部导航 -->
+  <nav class="mobile-nav" id="nav-mobile"></nav>
+
+  <input type="file" id="imp" accept="application/json" style="display:none" onchange="importData(event)">
+</div>
+
+<!-- 密码弹窗 -->
+<div class="mask" id="pwdMask">
+  <div class="modal">
+    <h3 id="pwdTitle">家长验证</h3>
+    <p id="pwdDesc">请输入 4 位数字密码</p>
+    <input type="password" id="pwdInput" inputmode="numeric" maxlength="4" pattern="\d*" placeholder="••••" autocomplete="off">
+    <div class="mrow">
+      <button class="no" onclick="closePwd()">取消</button>
+      <button class="ok" onclick="submitPwd()">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 通用弹窗 -->
+<div class="mask" id="genMask">
+  <div class="modal">
+    <h3 id="genTitle"></h3>
+    <p id="genDesc"></p>
+    <div class="mrow">
+      <button class="no" id="genNo" onclick="closeGen()">取消</button>
+      <button class="ok" id="genOk" onclick="closeGen()">确定</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PREFIX='wb_xiaosheng_';
+const K={tasks:PREFIX+'tasks',mis:PREFIX+'mistakes',rew:PREFIX+'rewards',red:PREFIX+'redemptions',pwd:PREFIX+'pwd',set:PREFIX+'settings',seeded:PREFIX+'seeded'};
+const TYPE_COLOR={'作业打卡':'b-t1','课程复习':'b-t2','课程预习':'b-t3','重难点巩固':'b-t4'};
+const TYPES=['作业打卡','课程复习','课程预习','重难点巩固'];
+const MASTERY=['未掌握','在巩固','已掌握'];
+let _pendingPwdAction=null;
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function fmt(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function todayStr(){return fmt(new Date());}
+function addDays(n){const d=new Date();d.setDate(d.getDate()+n);return d;}
+function $(id){return document.getElementById(id);}
+
+let state={tasks:[],mistakes:[],rewards:[],redemptions:[],pwd:null,settings:{childName:'小朋友'}};
+let mode='child';
+let activeTab='task';
+
+function load(){
+  try{
+    state.tasks=JSON.parse(localStorage.getItem(K.tasks)||'[]');
+    state.mistakes=JSON.parse(localStorage.getItem(K.mis)||'[]');
+    state.rewards=JSON.parse(localStorage.getItem(K.rew)||'[]');
+    state.redemptions=JSON.parse(localStorage.getItem(K.red)||'[]');
+    state.pwd=localStorage.getItem(K.pwd)||null;
+    state.settings=JSON.parse(localStorage.getItem(K.set)||'{}')||{childName:'小朋友'};
+  }catch(e){ console.warn('load err',e); }
+  if(localStorage.getItem(K.seeded)!=='1'){ seed(); }
+}
+function save(){
+  localStorage.setItem(K.tasks,JSON.stringify(state.tasks));
+  localStorage.setItem(K.mis,JSON.stringify(state.mistakes));
+  localStorage.setItem(K.rew,JSON.stringify(state.rewards));
+  localStorage.setItem(K.red,JSON.stringify(state.redemptions));
+  localStorage.setItem(K.pwd,state.pwd||'');
+  localStorage.setItem(K.set,JSON.stringify(state.settings));
+}
+function seed(){
+  const t=todayStr(), od=fmt(addDays(-2)), y=fmt(addDays(-1));
+  state.tasks=[
+    {id:uid(),name:'数学口算练习一页',type:'作业打卡',planDate:od,done:false,points:5},
+    {id:uid(),name:'语文第3课生字复习',type:'课程复习',planDate:t,done:false,points:5},
+    {id:uid(),name:'英语Unit2单词预习',type:'课程预习',planDate:t,done:false,points:5},
+    {id:uid(),name:'乘法口诀重难点巩固',type:'重难点巩固',planDate:t,done:false,points:8},
+  ];
+  state.mistakes=[
+    {id:uid(),subject:'数学',question:'36 ÷ 6 = ?',wrongAnswer:'5',rightAnswer:'6',mastery:0,date:y},
+  ];
+  state.rewards=[
+    {id:uid(),name:'周末多看 30 分钟动画片',cost:30},
+    {id:uid(),name:'买一本喜欢的书',cost:50},
+    {id:uid(),name:'去公园玩一次',cost:80},
+  ];
+  state.redemptions=[];
+  save();
+  localStorage.setItem(K.seeded,'1');
+}
+
+/* ---------- points ---------- */
+function computePoints(){
+  let p=0;
+  state.tasks.forEach(t=>{ if(t.done) p+=(t.points||0); });
+  state.mistakes.forEach(m=>{ if(m.mastery===2) p+=5; });
+  state.redemptions.forEach(r=>{ if(r.status==='approved') p-=r.cost; });
+  return p;
+}
+
+/* ---------- today ---------- */
+function todaysItems(){
+  const t=todayStr();
+  return state.tasks.filter(x=>!x.done && x.planDate<=t)
+    .sort((a,b)=> a.planDate<b.planDate?-1:(a.planDate>b.planDate?1:0));
+}
+function renderToday(){
+  const items=todaysItems();
+  const t=todayStr();
+  let html='<h2><svg class="icon icon-solid" viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M12 2a7 7 0 0 0-7 7c0 3 2 5 2 8h10c0-3 2-5 2-8a7 7 0 0 0-7-7z"/><path d="M9 21h6" stroke="#fff" stroke-width="2" fill="none"/></svg>今天要处理</h2>';
+  if(items.length===0){
+    html+='<div class="sub">'+todayStr().slice(5)+' · 全部完成啦，你真棒！</div><div class="empty">今天没有待办任务，去闯关积分领奖励吧 🎉</div>';
+  }else{
+    const over=items.filter(i=>i.planDate<t).length;
+    html+='<div class="sub">'+todayStr().slice(5)+' · 共 '+items.length+' 项'+(over?('（'+over+' 项逾期）'):'')+'</div>';
+    items.forEach(it=>{
+      const isOver=it.planDate<t;
+      html+='<div class="titem'+(isOver?' over':'')+'">'+
+        '<div class="info"><div class="nm">'+esc(it.name)+'</div>'+
+        '<div class="meta">'+(isOver?'<b>逾期 '+it.planDate.slice(5)+'</b>':'今天 ')+' · '+it.type+' · +'+it.points+'分</div></div>'+
+        '<button class="do" onclick="doToday(\''+it.id+'\')">完成</button></div>';
+    });
+  }
+  $('todayBox').innerHTML=html;
+}
+function doToday(id){
+  const t=state.tasks.find(x=>x.id===id); if(!t)return;
+  t.done=true; save(); render(); toast('完成啦！+'+t.points+' 积分 🌟');
+}
+
+/* ---------- nav ---------- */
+function renderNav(){
+  const tabs=[['task','每日任务'],['mistake','错题本'],['point','闯关积分']];
+  if(mode==='parent') tabs.push(['manage','家长管理']);
+  if(!tabs.find(x=>x[0]===activeTab)) activeTab='task';
+  const html=tabs.map(t=>'<button class="'+(t[0]===activeTab?'on':'')+'" onclick="goTab(\''+t[0]+'\')">'+t[1]+'</button>').join('');
+  $('nav-side').innerHTML=html;
+  $('nav-mobile').innerHTML=html;
+}
+function goTab(t){ activeTab=t; render(); }
+
+/* ---------- content ---------- */
+function renderContent(){
+  if(activeTab==='task') renderTask();
+  else if(activeTab==='mistake') renderMistake();
+  else if(activeTab==='point') renderPoint();
+  else if(activeTab==='manage') renderManage();
+}
+
+function renderTask(){
+  let html='<div class="section"><h3><svg class="icon" viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>每日学习任务台'+
+    '<span class="pill">'+(state.tasks.filter(t=>t.done).length)+'/'+state.tasks.length+' 已完成</span></h3>';
+  if(mode==='parent'){
+    html+='<form class="fm" onsubmit="return addTask(event)">'+
+      '<div class="ttl">发布新任务（家长）</div>'+
+      '<div class="fld"><label>任务名称</label><input id="tName" required placeholder="例如：数学口算一页"></div>'+
+      '<div class="grid2">'+
+        '<div class="fld"><label>类型</label><select id="tType">'+TYPES.map(x=>'<option>'+x+'</option>').join('')+'</select></div>'+
+        '<div class="fld"><label>计划日期</label><input id="tDate" type="date" value="'+todayStr()+'"></div>'+
+      '</div>'+
+      '<div class="fld"><label>积分奖励（分）</label><input id="tPts" type="number" min="1" value="5"></div>'+
+      '<button class="sbtn" type="submit">发布任务</button></form>';
+  }
+  if(state.tasks.length===0){
+    html+='<div class="hint">还没有任务，'+(mode==='parent'?'在上面发布一个吧':'等爸爸妈妈发布哦')+'</div>';
+  }else{
+    const sorted=[...state.tasks].sort((a,b)=> (a.done?1:0)-(b.done?1:0) || (a.planDate<b.planDate?-1:1));
+    sorted.forEach(t=>{
+      html+='<div class="task'+(t.done?' done':'')+'">'+
+        '<button class="chk" onclick="toggleTask(\''+t.id+'\')">'+(t.done?'✓':'')+'</button>'+
+        '<div class="body"><div class="nm">'+esc(t.name)+'</div>'+
+        '<div class="meta"><span class="badge '+TYPE_COLOR[t.type]+'">'+t.type+'</span>'+t.planDate.slice(5)+' · <span class="pts">+'+t.points+'分</span></div></div>'+
+        (mode==='parent'?'<button class="del" onclick="delTask(\''+t.id+'\')" title="删除"><svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7"/></svg></button>':'')+
+        '</div>';
+    });
+  }
+  html+='</div>';
+  $('content').innerHTML=html;
+}
+function toggleTask(id){
+  const t=state.tasks.find(x=>x.id===id); if(!t)return;
+  t.done=!t.done; save(); render();
+  if(t.done) toast('打卡成功！+'+t.points+' 分 🌟');
+}
+function addTask(e){
+  e.preventDefault();
+  state.tasks.push({id:uid(),name:$('tName').value.trim(),type:$('tType').value,planDate:$('tDate').value||todayStr(),done:false,points:parseInt($('tPts').value)||5});
+  save(); render(); toast('任务已发布'); return false;
+}
+function delTask(id){
+  if(!confirm('确定删除这个任务吗？'))return;
+  state.tasks=state.tasks.filter(x=>x.id!==id); save(); render();
+}
+
+function renderMistake(){
+  let html='<div class="section"><h3><svg class="icon" viewBox="0 0 24 24"><path d="M4 19h16M6 19V8l6-4 6 4v11"/><path d="M9 19v-6h6v6"/></svg>错题本'+
+    '<span class="pill">已掌握 '+state.mistakes.filter(m=>m.mastery===2).length+'/'+state.mistakes.length+'</span></h3>';
+  if(mode==='parent'){
+    html+='<form class="fm" onsubmit="return addMis(event)">'+
+      '<div class="ttl">添加错题（家长）</div>'+
+      '<div class="grid2">'+
+        '<div class="fld"><label>科目</label><input id="mSub" required placeholder="如：数学"></div>'+
+        '<div class="fld"><label>日期</label><input id="mDate" type="date" value="'+todayStr()+'"></div>'+
+      '</div>'+
+      '<div class="fld"><label>题目</label><textarea id="mQ" required placeholder="抄写题目"></textarea></div>'+
+      '<div class="grid2">'+
+        '<div class="fld"><label>我的错答</label><input id="mW" placeholder="当时写的答案"></div>'+
+        '<div class="fld"><label>正确答案</label><input id="mR" placeholder="正确结果"></div>'+
+      '</div>'+
+      '<button class="sbtn" type="submit">加入错题本</button></form>';
+  }
+  if(state.mistakes.length===0){
+    html+='<div class="hint">还没有错题记录～</div>';
+  }else{
+    state.mistakes.forEach(m=>{
+      html+='<div class="mis"><div class="top"><span class="subj">'+esc(m.subject)+'</span>'+
+        '<span class="mastery m-'+m.mastery+'">'+MASTERY[m.mastery]+'</span>'+
+        (mode==='parent'?'<button class="del" style="margin-left:auto" onclick="delMis(\''+m.id+'\')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7"/></svg></button>':'')+
+        '</div>'+
+        '<div class="q">'+esc(m.question)+'</div>'+
+        '<div class="row"><span class="lab">我的错答</span><span class="wrong">'+esc(m.wrongAnswer||'—')+'</span></div>'+
+        '<div class="row"><span class="lab">正确答案</span><span class="right">'+esc(m.rightAnswer||'—')+'</span></div>'+
+        '<div class="acts">'+
+          '<button class="mbtn" onclick="cycleMastery(\''+m.id+'\')">标记：'+MASTERY[(m.mastery+1)%3]+' →</button>'+
+          '<button class="mbtn" onclick="redoMis(\''+m.id+'\')">重做</button>'+
+        '</div></div>';
+    });
+  }
+  html+='</div>';
+  $('content').innerHTML=html;
+}
+function cycleMastery(id){
+  const m=state.mistakes.find(x=>x.id===id); if(!m)return;
+  const was=m.mastery; m.mastery=(m.mastery+1)%3;
+  if(m.mastery===2 && was!==2) toast('掌握啦！+5 积分 🌟');
+  save(); render();
+}
+function redoMis(id){
+  const m=state.mistakes.find(x=>x.id===id); if(!m)return;
+  m.mastery=0; save(); render(); toast('已重置，重新做一遍吧！');
+}
+function addMis(e){
+  e.preventDefault();
+  state.mistakes.push({id:uid(),subject:$('mSub').value.trim(),question:$('mQ').value.trim(),wrongAnswer:$('mW').value.trim(),rightAnswer:$('mR').value.trim(),mastery:0,date:$('mDate').value||todayStr()});
+  save(); render(); toast('已加入错题本'); return false;
+}
+function delMis(id){
+  if(!confirm('确定删除这道错题吗？'))return;
+  state.mistakes=state.mistakes.filter(x=>x.id!==id); save(); render();
+}
+
+function donut(pct){
+  const r=46,c=2*Math.PI*r,off=c*(1-pct/100);
+  return '<svg class="donut" viewBox="0 0 120 120">'+
+    '<circle cx="60" cy="60" r="'+r+'" fill="none" stroke="var(--line)" stroke-width="12"/>'+
+    '<circle cx="60" cy="60" r="'+r+'" fill="none" stroke="url(#g)" stroke-width="12" stroke-linecap="round" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'" transform="rotate(-90 60 60)"/>'+
+    '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--c1)"/><stop offset="1" stop-color="var(--c2)"/></linearGradient></defs>'+
+    '<text x="60" y="58" text-anchor="middle" font-size="22" font-weight="900" fill="var(--c1)">'+Math.round(pct)+'%</text>'+
+    '<text x="60" y="76" text-anchor="middle" font-size="11" fill="var(--muted)">打卡完成率</text></svg>';
+}
+function renderPoint(){
+  const p=computePoints();
+  const total=state.tasks.length, done=state.tasks.filter(t=>t.done).length;
+  const pct= total? done/total*100 : 0;
+  let html='<div class="section"><h3><svg class="icon" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M12 4V2"/></svg>闯关积分奖励</h3>';
+  html+='<div class="ptop">'+donut(pct)+
+    '<div class="ptnum"><div class="big">'+p+'</div><div class="lab">当前可用积分</div></div></div>';
+  html+='<div class="subh">奖励商城</div>';
+  if(state.rewards.length===0){
+    html+='<div class="hint">还没有奖励，让家长去「家长管理」添加吧</div>';
+  }else{
+    state.rewards.forEach(r=>{
+      const can=p>=r.cost;
+      html+='<div class="reward"><div class="info"><div class="rn">'+esc(r.name)+'</div><div class="rc">'+r.cost+' 分</div></div>'+
+        '<button class="ex" '+(can?'':'disabled')+' onclick="reqReward(\''+r.id+'\')">'+(can?'兑换':'差'+(r.cost-p)+'分')+'</button></div>';
+    });
+  }
+  html+='<div class="subh">我的兑换记录</div>';
+  const recs=state.redemptions.slice().reverse();
+  if(recs.length===0){
+    html+='<div class="hint">还没有兑换记录</div>';
+  }else{
+    recs.forEach(r=>{
+      html+='<div class="rec"><span>'+esc(r.rewardName)+' · '+r.cost+'分</span>'+
+        '<span class="st-'+(r.status==='approved'?'a':'p')+'">'+(r.status==='approved'?'已兑换':'待确认')+'</span></div>';
+    });
+  }
+  html+='</div>';
+  $('content').innerHTML=html;
+}
+function reqReward(id){
+  const r=state.rewards.find(x=>x.id===id); if(!r)return;
+  if(computePoints()<r.cost){ toast('积分不够哦，先去打卡赚分吧'); return; }
+  state.redemptions.push({id:uid(),rewardId:id,rewardName:r.name,cost:r.cost,status:'pending',requestDate:todayStr()});
+  save(); render(); toast('已申请，等爸爸妈妈确认 🎈');
+}
+
+function renderManage(){
+  let html='<div class="section"><h3><svg class="icon" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1L14.5 3h-4l-.3 2.6a7 7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.3 2.4h4l.3-2.4a7 7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6a7 7 0 0 0 .1-1z"/></svg>家长管理</h3>';
+
+  html+='<div class="subh">奖励商城设置</div>';
+  html+='<form class="fm" onsubmit="return addReward(event)">'+
+    '<div class="ttl">添加奖励</div>'+
+    '<div class="grid2"><div class="fld"><label>奖励名称</label><input id="rName" required placeholder="如：去公园玩"></div>'+
+    '<div class="fld"><label>所需积分</label><input id="rCost" type="number" min="1" value="30"></div></div>'+
+    '<button class="sbtn" type="submit">添加奖励</button></form>';
+  state.rewards.forEach(r=>{
+    html+='<div class="reward"><div class="info"><div class="rn">'+esc(r.name)+'</div><div class="rc">'+r.cost+' 分</div></div>'+
+      '<button class="del" onclick="delReward(\''+r.id+'\')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7"/></svg></button></div>';
+  });
+
+  html+='<div class="subh">兑换确认</div>';
+  const pend=state.redemptions.filter(r=>r.status==='pending');
+  if(pend.length===0){
+    html+='<div class="hint">暂无待确认的兑换</div>';
+  }else{
+    pend.forEach(r=>{
+      html+='<div class="rec"><span>'+esc(r.rewardName)+' · '+r.cost+'分</span>'+
+        '<button class="mbtn" style="min-height:38px;padding:0 12px" onclick="approveRed(\''+r.id+'\')">确认兑换</button></div>';
+    });
+  }
+
+  html+='<div class="subh">设置与数据</div>';
+  html+='<form class="fm" onsubmit="return setPwd(event)"><div class="ttl">修改家长密码</div>'+
+    '<div class="fld"><label>新 4 位密码</label><input id="newPwd" type="password" inputmode="numeric" maxlength="4" pattern="\\d*" required placeholder="••••"></div>'+
+    '<button class="sbtn ghost" type="submit">保存密码</button></form>';
+  html+='<button class="sbtn ghost" style="margin-bottom:10px" onclick="clearSample()">清空示例数据</button>';
+  html+='<button class="sbtn ghost" style="color:var(--warn);border-color:#ffc9c9" onclick="clearAll()">清空全部数据</button>';
+  html+='</div>';
+  $('content').innerHTML=html;
+}
+function addReward(e){
+  e.preventDefault();
+  state.rewards.push({id:uid(),name:$('rName').value.trim(),cost:parseInt($('rCost').value)||30});
+  save(); render(); toast('奖励已添加'); return false;
+}
+function delReward(id){
+  if(!confirm('删除这个奖励？'))return;
+  state.rewards=state.rewards.filter(x=>x.id!==id); save(); render();
+}
+function approveRed(id){
+  const r=state.redemptions.find(x=>x.id===id); if(!r)return;
+  if(computePoints()<r.cost){ toast('孩子积分不足，无法兑换'); return; }
+  r.status='approved'; r.approveDate=todayStr(); save(); render(); toast('已确认兑换 🎁');
+}
+function setPwd(e){
+  e.preventDefault();
+  const v=$('newPwd').value;
+  if(!/^\d{4}$/.test(v)){ toast('请输入 4 位数字'); return false; }
+  state.pwd=v; save(); toast('密码已保存'); return false;
+}
+function clearSample(){
+  if(!confirm('清空示例数据？将删除所有任务、错题、奖励（保留密码）。'))return;
+  state.tasks=[];state.mistakes=[];state.rewards=[];state.redemptions=[];
+  localStorage.setItem(K.seeded,'1'); save(); render(); toast('示例数据已清空');
+}
+function clearAll(){
+  if(!confirm('⚠️ 确定清空全部数据？此操作不可恢复（含密码）！'))return;
+  if(!confirm('最后确认：真的要清空所有数据吗？'))return;
+  Object.values(K).forEach(k=>localStorage.removeItem(k));
+  state={tasks:[],mistakes:[],rewards:[],redemptions:[],pwd:null,settings:{childName:'小朋友'}};
+  localStorage.setItem(K.seeded,'1'); save(); switchMode('child'); render(); toast('已清空全部数据');
+}
+
+/* ---------- mode & password ---------- */
+function switchMode(target){
+  if(target==='child'){ mode='child'; render(); return; }
+  if(state.pwd===null){ openPwd('set'); return; }
+  openPwd('enter');
+}
+function openPwd(kind){
+  _pendingPwdAction=kind;
+  $('pwdTitle').textContent= kind==='set'?'设置家长密码':'家长验证';
+  $('pwdDesc').textContent= kind==='set'?'首次使用，请设置 4 位数字密码':'请输入 4 位数字密码';
+  $('pwdInput').value='';
+  $('pwdMask').classList.add('show');
+  setTimeout(()=>$('pwdInput').focus(),50);
+}
+function closePwd(){ $('pwdMask').classList.remove('show'); _pendingPwdAction=null; }
+function submitPwd(){
+  const v=$('pwdInput').value;
+  if(!/^\d{4}$/.test(v)){ toast('请输入 4 位数字'); return; }
+  if(_pendingPwdAction==='set'){
+    state.pwd=v; save(); closePwd(); mode='parent'; render(); toast('密码已设置，进入家长模式');
+  }else{
+    if(v===state.pwd){ closePwd(); mode='parent'; render(); toast('已进入家长模式'); }
+    else{ toast('密码错误，请重试'); $('pwdInput').value=''; $('pwdInput').focus(); }
+  }
+}
+function renderModeSwitch(){
+  $('mChild').classList.toggle('on',mode==='child');
+  $('mParent').classList.toggle('on',mode==='parent');
+  $('mChildM').classList.toggle('on',mode==='child');
+  $('mParentM').classList.toggle('on',mode==='parent');
+}
+
+/* ---------- backup ---------- */
+function exportData(){
+  const data={tasks:state.tasks,mistakes:state.mistakes,rewards:state.rewards,redemptions:state.redemptions,pwd:state.pwd,settings:state.settings,__v:1};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='学习小台-备份-'+todayStr()+'.json';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('已导出备份');
+}
+function importData(e){
+  const f=e.target.files[0]; if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const d=JSON.parse(rd.result);
+      if(!confirm('导入将覆盖当前数据，确定继续？')){ e.target.value=''; return; }
+      state.tasks=d.tasks||[]; state.mistakes=d.mistakes||[]; state.rewards=d.rewards||[];
+      state.redemptions=d.redemptions||[]; state.pwd=(d.pwd!=null?d.pwd:state.pwd);
+      state.settings=d.settings||state.settings;
+      save(); render(); toast('导入成功，共 '+ (state.tasks.length+state.mistakes.length+state.rewards.length) +' 条');
+    }catch(err){ alert('文件格式错误，导入失败'); }
+    e.target.value='';
+  };
+  rd.readAsText(f);
+}
+
+/* ---------- util ---------- */
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toast(msg){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove('show'),1800);
+}
+function renderHint(){
+  const cnt=state.tasks.length+state.mistakes.length+state.rewards.length+state.redemptions.length;
+  const h=$('hint');
+  if(cnt>=30){ h.className='hint show'; h.textContent='数据已积累 '+cnt+' 条，建议点右上角「备份」导出 JSON 以防丢失'; }
+  else{ h.className='hint'; h.textContent='数据保存在本机浏览器，记得定期「备份」哦'; }
+}
+
+/* ---------- render all ---------- */
+function render(){
+  document.body.className = (mode==='parent'?'mode-parent':'mode-child');
+  renderToday(); renderModeSwitch(); renderNav(); renderContent(); renderHint();
+}
+
+$('pwdInput').addEventListener('keydown',e=>{ if(e.key==='Enter') submitPwd(); });
+
+load();
+render();
+</script>
+</body>
+</html>
