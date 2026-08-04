@@ -132,19 +132,21 @@ export function AiToolsGrid({ tools, columns = "three", compact = false, limit, 
                 <h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl" id="ai-tool-dialog-title">{selectedTool.name}</h2>
               </div>
             </div>
-            <div className="max-h-[calc(86vh-14rem)] overflow-y-auto p-5 sm:p-6">
-              <div className="grid gap-5 sm:grid-cols-[0.85fr_1.15fr]">
-                <section className="rounded-xl border border-border bg-background/45 p-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground">用途</h3>
-                  <p className="mt-3 leading-7">{selectedTool.description}</p>
-                  {selectedTool.tags.length ? <div className="mt-4 flex flex-wrap gap-2">{selectedTool.tags.map((tag) => <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-muted-foreground" key={tag}>{tag}</span>)}</div> : null}
-                </section>
-                <section className="rounded-xl border border-border bg-background/45 p-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground">详细介绍</h3>
-                  <p className="mt-3 whitespace-pre-line leading-7 text-muted-foreground">{normalizedDetail(selectedTool)}</p>
-                </section>
+            <div className="flex max-h-[calc(86vh-14rem)] flex-col">
+              <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+                <div className="grid gap-5 sm:grid-cols-[0.85fr_1.15fr]">
+                  <section className="rounded-xl border border-border bg-background/45 p-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground">用途</h3>
+                    <p className="mt-3 leading-7">{selectedTool.description}</p>
+                    {selectedTool.tags.length ? <div className="mt-4 flex flex-wrap gap-2">{selectedTool.tags.map((tag) => <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-muted-foreground" key={tag}>{tag}</span>)}</div> : null}
+                  </section>
+                  <section className="rounded-xl border border-border bg-background/45 p-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground">详细介绍</h3>
+                    <p className="mt-3 whitespace-pre-line leading-7 text-muted-foreground">{normalizedDetail(selectedTool)}</p>
+                  </section>
+                </div>
               </div>
-              <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
+              <div className="flex shrink-0 items-center justify-end gap-3 border-t border-border/60 bg-surface px-5 py-4 sm:px-6">
                 <button className="secondary-button" type="button" onClick={() => setSelectedTool(null)}>关闭</button>
                 {selectedTool.toolUrl ? <a className="primary-button" href={selectedTool.toolUrl} rel="noopener noreferrer" target="_blank">访问工具 <ArrowUpRight size={16} /></a> : null}
               </div>
